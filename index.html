@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raycast - Your shortcut to everything</title>
+  <meta name="description" content="A collection of powerful productivity tools all within an extendable launcher. Fast, ergonomic and reliable.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF6363'%3E%3Cpath d='M12 2L2 12l10 10 10-10L12 2zm0 4.5l5.5 5.5L12 17.5 6.5 12 12 6.5z'/%3E%3C/svg%3E">
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            raycast: {
+              red: '#FF6363',
+              ruby: '#FF3344',
+              crimson: '#D92338',
+              glow: 'rgba(255, 99, 99, 0.35)',
+              dark: '#070709',
+              card: '#0D0E12',
+              cardBorder: 'rgba(255, 255, 255, 0.08)',
+              hoverBorder: 'rgba(255, 99, 99, 0.3)',
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'glow-pulse': 'glowPulse 3s ease-in-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            glowPulse: {
+              '0%, 100%': { opacity: '0.4' },
+              '50%': { opacity: '0.85' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Styling for authentic Raycast aesthetics */
+    body {
+      background-color: #070709;
+      color: #E2E8F0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      selection-background-color: #FF6363;
+      selection-color: #ffffff;
+    }
+
+    ::selection {
+      background: #FF6363;
+      color: #ffffff;
+    }
+
+    /* Subtle custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070709;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1F222E;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #2E3345;
+    }
+
+    /* Glassmorphism utility */
+    .glass-panel {
+      background: rgba(13, 14, 18, 0.72);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card {
+      background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.03) 0%, rgba(13, 14, 18, 0.6) 100%);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-card:hover {
+      border-color: rgba(255, 99, 99, 0.35);
+      box-shadow: 0 10px 30px -10px rgba(255, 99, 99, 0.15);
+      transform: translateY(-2px);
+    }
+
+    /* Raycast Keycap Styles */
+    .ray-key {
+      background: linear-gradient(180deg, #1A1C24 0%, #101217 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 0 #08090C, 0 5px 8px rgba(0, 0, 0, 0.6);
+      transition: all 0.1s ease;
+      user-select: none;
+    }
+
+    .ray-key:active, .ray-key.active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #08090C, 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .ray-key-glow {
+      border-color: rgba(255, 99, 99, 0.7) !important;
+      box-shadow: 0 4px 0 #80121D, 0 0 20px rgba(255, 70, 70, 0.45) !important;
+    }
+
+    /* Red streak hero visual */
+    .streak-container {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 1400px;
+      height: 750px;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    /* Mac screen bezel */
+    .mac-frame {
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+                  0 25px 60px -15px rgba(0, 0, 0, 0.9),
+                  0 0 40px -10px rgba(255, 60, 60, 0.2);
+    }
+
+    /* Radial gradients */
+    .radial-ruby {
+      background: radial-gradient(ellipse 70% 50% at 50% 40%, rgba(255, 50, 70, 0.18) 0%, rgba(7, 7, 9, 0) 70%);
+    }
+
+    /* Dot grid background */
+    .dot-grid {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="relative min-h-screen">
+
+  <!-- Background Ambience & Canvas -->
+  <div class="streak-container">
+    <canvas id="hero-streak-canvas" class="w-full h-full opacity-80"></canvas>
+  </div>
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[550px] radial-ruby pointer-events-none z-0"></div>
+
+  <!-- FLOATING NAVIGATION BAR (Matching Screenshots 1-4) -->
+  <header class="fixed top-5 inset-x-0 z-50 flex justify-center px-4">
+    <nav class="glass-panel rounded-full px-4 py-2.5 flex items-center justify-between gap-6 max-w-5xl w-full shadow-2xl transition-all duration-300">
+      
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center gap-2.5 group">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-[#FF6363] to-[#D92338] p-[1.5px] flex items-center justify-center shadow-lg shadow-raycast-red/25 group-hover:scale-105 transition-transform">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L2.5 11.5 12 21l9.5-9.5L12 2zm0 4.2L17.3 11.5 12 16.8 6.7 11.5 12 6.2z"/>
+          </svg>
+        </div>
+        <span class="font-bold text-base tracking-tight text-white group-hover:text-raycast-red transition-colors">Raycast</span>
+      </a>
+
+      <!-- Nav Links (Desktop) -->
+      <div class="hidden md:flex items-center gap-5 text-[13px] font-medium text-zinc-400">
+        <a href="#store" class="hover:text-white transition-colors">Store</a>
+        <a href="#pro" class="hover:text-white transition-colors">Pro</a>
+        <a href="#ai" class="hover:text-white transition-colors flex items-center gap-1">
+          AI
+          <span class="text-[10px] bg-red-500/20 text-red-400 font-semibold px-1.5 py-0.5 rounded-full border border-red-500/30">New</span>
+        </a>
+        <a href="#ios" class="hover:text-white transition-colors">iOS</a>
+        <a href="#windows" class="hover:text-white transition-colors flex items-center gap-1">
+          Windows
+          <span class="text-[10px] bg-zinc-800 text-zinc-300 font-medium px-1.5 py-0.2 rounded-full border border-zinc-700">Beta</span>
+        </a>
+        <a href="#teams" class="hover:text-white transition-colors">Teams</a>
+        <a href="#enterprise" class="hover:text-white transition-colors">Enterprise</a>
+        <a href="#blog" class="hover:text-white transition-colors">Blog</a>
+        <a href="#pricing" class="hover:text-white transition-colors">Pricing</a>
+      </div>
+
+      <!-- Right Action CTAs -->
+      <div class="flex items-center gap-3">
+        <button onclick="openCommandPalette()" class="hidden sm:flex items-center gap-2 px-2.5 py-1 text-xs text-zinc-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-800 transition-colors">
+          <span>Search</span>
+          <kbd class="text-[10px] font-mono bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-700 text-zinc-300">⌘K</kbd>
+        </button>
+
+        <a href="#login" class="text-xs font-medium text-zinc-300 hover:text-white hidden sm:block px-2">Log in</a>
+
+        <a href="#download" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-semibold shadow-md transition-all duration-200 hover:scale-[1.02]">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 170 170">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.67-7.81-11.94-14.3-5.26-8.03-9.36-16.71-12.3-26.04-3.69-11.72-5.54-22.9-5.54-33.54 0-13.46 3.37-24.87 10.12-34.22 6.74-9.35 15.34-14.15 25.79-14.42 4.36 0 9.28 1.15 14.75 3.46 5.48 2.3 9.4 3.51 11.79 3.62 1.95 0 6.08-1.28 12.38-3.84 6.31-2.56 11.53-3.62 15.66-3.18 12.4.67 21.6 5.38 27.6 14.15-11.08 6.74-16.51 16.08-16.31 28.02.2 9.57 3.99 17.58 11.37 24.03 7.37 6.45 15.89 10.22 25.55 11.31-2.25 7.17-5.13 14.3-8.64 21.39zm-32.96-107.5c0-6.74 2.45-13.1 7.37-19.08 4.92-5.98 11.13-9.67 18.63-11.08.33 1.08.49 2.17.49 3.25 0 6.63-2.58 13.04-7.75 19.23-5.16 6.18-11.23 9.77-18.2 10.77-.1-.99-.54-2.02-.54-3.09z"/>
+          </svg>
+          <span>Download</span>
+        </a>
+
+        <!-- Mobile hamburger toggle -->
+        <button id="mobile-menu-btn" class="md:hidden text-zinc-400 hover:text-white p-1" onclick="toggleMobileMenu()">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Mobile Dropdown Menu -->
+  <div id="mobile-menu" class="fixed inset-x-4 top-20 z-40 glass-panel rounded-2xl p-5 flex flex-col gap-4 text-sm font-medium hidden md:hidden shadow-2xl">
+    <a href="#store" class="text-zinc-300 hover:text-white py-1">Store</a>
+    <a href="#pro" class="text-zinc-300 hover:text-white py-1">Pro</a>
+    <a href="#ai" class="text-zinc-300 hover:text-white py-1 flex items-center justify-between">AI <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">New</span></a>
+    <a href="#ios" class="text-zinc-300 hover:text-white py-1">iOS</a>
+    <a href="#windows" class="text-zinc-300 hover:text-white py-1 flex items-center justify-between">Windows <span class="text-xs bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full">Beta</span></a>
+    <a href="#teams" class="text-zinc-300 hover:text-white py-1">Teams</a>
+    <a href="#enterprise" class="text-zinc-300 hover:text-white py-1">Enterprise</a>
+    <a href="#pricing" class="text-zinc-300 hover:text-white py-1">Pricing</a>
+    <div class="h-px bg-zinc-800 my-1"></div>
+    <div class="flex items-center justify-between">
+      <a href="#login" class="text-zinc-400 hover:text-white">Log in</a>
+      <a href="#download" class="px-4 py-2 bg-white text-black rounded-full font-semibold text-xs">Download for Mac</a>
+    </div>
+  </div>
+
+  <!-- HERO SECTION (Faithful to Screenshot 2) -->
+  <section class="relative pt-36 pb-20 md:pt-44 md:pb-28 text-center px-4 flex flex-col items-center z-10">
+    <div class="max-w-3xl mx-auto flex flex-col items-center">
+      
+      <!-- Main Title -->
+      <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white mb-6 leading-[1.08]">
+        Your shortcut to<br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-zinc-400">everything.</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="text-base sm:text-lg md:text-xl text-zinc-400 font-normal max-w-xl mx-auto mb-9 leading-relaxed">
+        A collection of powerful productivity tools all within an extendable launcher. Fast, ergonomic and reliable.
+      </p>
+
+      <!-- Primary CTA Button (Mac Download) -->
+      <div class="flex flex-col items-center gap-3 w-full sm:w-auto">
+        <a href="#download" class="group flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full bg-white hover:bg-zinc-100 text-zinc-950 font-semibold text-sm sm:text-base shadow-xl shadow-white/5 transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]">
+          <svg class="w-4 h-4 fill-current text-black" viewBox="0 0 170 170">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.67-7.81-11.94-14.3-5.26-8.03-9.36-16.71-12.3-26.04-3.69-11.72-5.54-22.9-5.54-33.54 0-13.46 3.37-24.87 10.12-34.22 6.74-9.35 15.34-14.15 25.79-14.42 4.36 0 9.28 1.15 14.75 3.46 5.48 2.3 9.4 3.51 11.79 3.62 1.95 0 6.08-1.28 12.38-3.84 6.31-2.56 11.53-3.62 15.66-3.18 12.4.67 21.6 5.38 27.6 14.15-11.08 6.74-16.51 16.08-16.31 28.02.2 9.57 3.99 17.58 11.37 24.03 7.37 6.45 15.89 10.22 25.55 11.31-2.25 7.17-5.13 14.3-8.64 21.39zm-32.96-107.5c0-6.74 2.45-13.1 7.37-19.08 4.92-5.98 11.13-9.67 18.63-11.08.33 1.08.49 2.17.49 3.25 0 6.63-2.58 13.04-7.75 19.23-5.16 6.18-11.23 9.77-18.2 10.77-.1-.99-.54-2.02-.54-3.09z"/>
+          </svg>
+          <span>Download for Mac</span>
+        </a>
+
+        <!-- OS Requirement Subtext -->
+        <span class="text-xs text-zinc-500 font-mono tracking-tight">macOS Tahoe and Apple Silicon required</span>
+
+        <!-- Alternative download links -->
+        <div class="flex items-center gap-3 text-xs text-zinc-400 mt-1">
+          <button onclick="copyHomebrewCommand()" class="hover:text-zinc-200 transition-colors flex items-center gap-1">
+            <span>Install via Homebrew</span>
+            <span id="brew-copied-badge" class="hidden text-[10px] text-green-400 font-mono">(copied!)</span>
+          </button>
+          <span class="text-zinc-700">|</span>
+          <a href="#v1" class="hover:text-zinc-200 transition-colors">Download v1</a>
+        </div>
+      </div>
+
+      <!-- Badge Link to Keyboard Feature -->
+      <div class="mt-8">
+        <a href="#keyboard-section" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-xs text-zinc-300 border border-zinc-800 hover:border-zinc-700 transition-all duration-200 group">
+          <span>The Raycast Keyboard</span>
+          <span class="text-zinc-500 group-hover:translate-x-0.5 group-hover:text-zinc-300 transition-all">→</span>
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- INTERACTIVE MACOS SHOWCASE (Faithful to Screenshot 1) -->
+  <section id="demo" class="relative py-16 px-4 max-w-6xl mx-auto z-10">
+    <div class="text-center mb-10">
+      <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
+        Take shortcuts, not detours.
+      </h2>
+      <p class="text-zinc-400 text-base sm:text-lg mt-2">
+        One interface, everything you need.
+      </p>
+    </div>
+
+    <!-- macOS Virtual Desktop Display -->
+    <div class="mac-frame rounded-2xl overflow-hidden bg-[#0a0a0d] border border-white/10 relative">
+      
+      <!-- macOS Menu Bar -->
+      <div class="bg-[#121216]/90 backdrop-blur-md px-4 py-1.5 border-b border-white/5 flex items-center justify-between text-xs text-zinc-300 select-none">
+        <!-- Left Menu Items -->
+        <div class="flex items-center gap-4">
+          <svg class="w-3.5 h-3.5 fill-current text-zinc-300" viewBox="0 0 170 170">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.67-7.81-11.94-14.3-5.26-8.03-9.36-16.71-12.3-26.04-3.69-11.72-5.54-22.9-5.54-33.54 0-13.46 3.37-24.87 10.12-34.22 6.74-9.35 15.34-14.15 25.79-14.42 4.36 0 9.28 1.15 14.75 3.46 5.48 2.3 9.4 3.51 11.79 3.62 1.95 0 6.08-1.28 12.38-3.84 6.31-2.56 11.53-3.62 15.66-3.18 12.4.67 21.6 5.38 27.6 14.15-11.08 6.74-16.51 16.08-16.31 28.02.2 9.57 3.99 17.58 11.37 24.03 7.37 6.45 15.89 10.22 25.55 11.31-2.25 7.17-5.13 14.3-8.64 21.39zm-32.96-107.5c0-6.74 2.45-13.1 7.37-19.08 4.92-5.98 11.13-9.67 18.63-11.08.33 1.08.49 2.17.49 3.25 0 6.63-2.58 13.04-7.75 19.23-5.16 6.18-11.23 9.77-18.2 10.77-.1-.99-.54-2.02-.54-3.09z"/>
+          </svg>
+          <span class="font-semibold text-white">Finder</span>
+          <span class="hidden sm:inline hover:text-white cursor-default">File</span>
+          <span class="hidden sm:inline hover:text-white cursor-default">Edit</span>
+          <span class="hidden sm:inline hover:text-white cursor-default">View</span>
+          <span class="hidden md:inline hover:text-white cursor-default">Go</span>
+          <span class="hidden md:inline hover:text-white cursor-default">Window</span>
+          <span class="hidden md:inline hover:text-white cursor-default">Help</span>
+        </div>
+
+        <!-- Right Menu Status Icons -->
+        <div class="flex items-center gap-3 font-mono text-[11px] text-zinc-400">
+          <span title="Pen Tool" class="hidden sm:inline">✎</span>
+          <span class="flex items-center gap-1">
+            <svg class="w-3 h-3 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
+            <span>49</span>
+          </span>
+          <span class="flex items-center gap-1 hidden sm:flex">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+            <span>1</span>
+          </span>
+          <span class="text-zinc-300 hidden md:inline">Lunch - 37m left</span>
+          <span title="Wi-Fi">
+            <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.393 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>
+          </span>
+          <span id="mac-clock" class="font-sans text-xs text-zinc-200">Mon Jun 22 9:41 AM</span>
+        </div>
+      </div>
+
+      <!-- Desktop Workspace Area with Abstract Wallpaper -->
+      <div class="relative min-h-[520px] md:min-h-[580px] p-4 sm:p-8 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-[#110608] via-[#09070B] to-[#050508]">
+        
+        <!-- Background Ambient Red Geometric Glow (matches wallpaper in screenshot) -->
+        <div class="absolute inset-0 pointer-events-none opacity-40">
+          <div class="absolute -top-20 -left-20 w-96 h-96 rounded-full bg-red-600/20 blur-3xl"></div>
+          <div class="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-red-900/20 blur-3xl"></div>
+        </div>
+
+        <!-- THE RAYCAST LAUNCHER WINDOW (Screenshot 1) -->
+        <div class="relative w-full max-w-2xl bg-[#121318]/95 backdrop-blur-2xl rounded-xl border border-white/10 shadow-2xl overflow-hidden z-20 transition-all duration-300">
+          
+          <!-- Launcher Header Search Bar -->
+          <div class="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#17181F]/70">
+            <div class="flex items-center gap-3 flex-1">
+              <span class="text-zinc-500 text-sm">←</span>
+              <input type="text" id="launcher-search-input" value="Type to filter entries..." 
+                     class="bg-transparent text-sm text-zinc-200 focus:outline-none w-full placeholder-zinc-500 select-all"
+                     onfocus="if(this.value==='Type to filter entries...') this.value=''" 
+                     onblur="if(this.value==='') this.value='Type to filter entries...'">
+            </div>
+            <!-- Filter Dropdown Pill -->
+            <div class="relative">
+              <button id="filter-dropdown-btn" onclick="toggleFilterMenu()" class="flex items-center gap-1.5 px-2.5 py-1 text-xs text-zinc-300 bg-zinc-800/80 hover:bg-zinc-700/80 rounded border border-white/5">
+                <span id="filter-label">Images Only</span>
+                <span class="text-[10px] text-zinc-400">▾</span>
+              </button>
+              <div id="filter-menu" class="absolute right-0 top-full mt-1.5 w-36 bg-zinc-900 border border-zinc-700/60 rounded-lg shadow-xl py-1 text-xs hidden z-30">
+                <button onclick="setFilter('All')" class="w-full text-left px-3 py-1.5 hover:bg-zinc-800 text-zinc-300">All</button>
+                <button onclick="setFilter('Images Only')" class="w-full text-left px-3 py-1.5 hover:bg-zinc-800 text-white font-medium bg-zinc-800/50">Images Only</button>
+                <button onclick="setFilter('Links')" class="w-full text-left px-3 py-1.5 hover:bg-zinc-800 text-zinc-300">Links</button>
+                <button onclick="setFilter('Text')" class="w-full text-left px-3 py-1.5 hover:bg-zinc-800 text-zinc-300">Text</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Tab Content Views -->
+          <div id="tab-views" class="min-h-[290px] flex">
+            
+            <!-- VIEW 1: CLIPBOARD HISTORY (Default - Screenshot 1) -->
+            <div id="view-clipboard" class="w-full flex flex-col sm:flex-row">
+              <!-- Left Entries List -->
+              <div class="w-full sm:w-[48%] border-b sm:border-b-0 sm:border-r border-white/5 p-2 flex flex-col gap-1 text-xs">
+                <div class="text-[10px] uppercase font-mono tracking-wider text-zinc-500 px-3 py-1">Today</div>
+                
+                <!-- Entry 1 (Active) -->
+                <div onclick="selectClipboardEntry(0)" id="clip-item-0" class="clip-item flex items-center justify-between px-3 py-2 rounded-lg bg-red-600/20 text-white border border-red-500/30 cursor-pointer">
+                  <div class="flex items-center gap-2.5 truncate">
+                    <span class="text-zinc-400">↩</span>
+                    <span class="truncate font-medium">Image [1200 × 1000]</span>
+                  </div>
+                </div>
+
+                <!-- Entry 2 -->
+                <div onclick="selectClipboardEntry(1)" id="clip-item-1" class="clip-item flex items-center justify-between px-3 py-2 rounded-lg text-zinc-400 hover:bg-white/5 cursor-pointer transition-colors">
+                  <div class="flex items-center gap-2.5 truncate">
+                    <span>🖼</span>
+                    <span class="truncate">Two Mangos [640 × 427]</span>
+                  </div>
+                </div>
+
+                <!-- Entry 3 -->
+                <div onclick="selectClipboardEntry(2)" id="clip-item-2" class="clip-item flex items-center justify-between px-3 py-2 rounded-lg text-zinc-400 hover:bg-white/5 cursor-pointer transition-colors">
+                  <div class="flex items-center gap-2.5 truncate">
+                    <span>🌌</span>
+                    <span class="truncate">magic.png [640 × 360]</span>
+                  </div>
+                </div>
+
+                <!-- Entry 4 -->
+                <div onclick="selectClipboardEntry(3)" id="clip-item-3" class="clip-item flex items-center justify-between px-3 py-2 rounded-lg text-zinc-400 hover:bg-white/5 cursor-pointer transition-colors">
+                  <div class="flex items-center gap-2.5 truncate">
+                    <span>🎨</span>
+                    <span class="truncate">Image [842 × 420]</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Preview Pane -->
+              <div class="w-full sm:w-[52%] p-3.5 flex flex-col justify-between bg-black/20">
+                <!-- Image Graphic Preview (Glowing ring wallpaper like Screenshot 1) -->
+                <div class="w-full h-36 rounded-lg bg-gradient-to-br from-black via-zinc-950 to-neutral-900 border border-white/5 flex items-center justify-center relative overflow-hidden group">
+                  <div id="preview-art" class="w-24 h-24 rounded-full border border-white/30 shadow-[0_0_40px_rgba(255,255,255,0.3)] transform -rotate-45 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
+                    <div class="w-20 h-16 rounded-full border border-white/40"></div>
+                  </div>
+                  <div class="absolute bottom-2 right-2 text-[10px] font-mono text-zinc-500 bg-black/60 px-1.5 py-0.5 rounded">Preview</div>
+                </div>
+
+                <!-- Metadata Details Table -->
+                <div class="mt-3 text-xs space-y-1.5 text-zinc-400 font-mono">
+                  <div class="text-[10px] uppercase font-sans tracking-wider text-zinc-500">Information</div>
+                  <div class="flex justify-between py-0.5 border-b border-white/5">
+                    <span class="text-zinc-500">Application</span>
+                    <span id="clip-app" class="text-zinc-300">Finder</span>
+                  </div>
+                  <div class="flex justify-between py-0.5 border-b border-white/5">
+                    <span class="text-zinc-500">Content Type</span>
+                    <span id="clip-type" class="text-zinc-300">Image</span>
+                  </div>
+                  <div class="flex justify-between py-0.5 border-b border-white/5">
+                    <span class="text-zinc-500">Path</span>
+                    <span id="clip-path" class="text-zinc-300 truncate max-w-[140px]">~/Desktop/wallpaper.png</span>
+                  </div>
+                  <div class="flex justify-between py-0.5">
+                    <span class="text-zinc-500">Dimensions</span>
+                    <span id="clip-dim" class="text-zinc-300">842 × 420</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW 2: RAYCAST AI AGENT (Interactive) -->
+            <div id="view-ai" class="w-full p-4 flex flex-col justify-between hidden">
+              <div>
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-red-400">✨</span>
+                    <span class="text-xs font-semibold text-white">Claude 3.7 Sonnet / Opus</span>
+                  </div>
+                  <span class="text-[10px] font-mono bg-red-500/10 text-red-400 px-2 py-0.5 rounded border border-red-500/20">Tool Use Active</span>
+                </div>
+                <div class="space-y-3 text-xs">
+                  <div class="bg-white/5 p-3 rounded-lg text-zinc-200">
+                    <span class="text-zinc-400 font-mono text-[11px] block mb-1">Prompt:</span>
+                    "Check Linear for tasks assigned to me and create a task in Things for each one."
+                  </div>
+                  <div class="space-y-1.5 pl-2 font-mono text-[11px]">
+                    <div class="flex items-center gap-2 text-green-400">
+                      <span>✓</span>
+                      <span>Fetching assigned tasks from Linear</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-green-400">
+                      <span>✓</span>
+                      <span>Fetching issue details (5 issues found)</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-green-400">
+                      <span>✓</span>
+                      <span>Created 5 corresponding tasks in Things 3</span>
+                    </div>
+                  </div>
+                  <div class="text-zinc-300 bg-red-950/20 border border-red-500/20 p-2.5 rounded-lg text-xs leading-relaxed">
+                    You have 5 new tasks waiting for you in Linear. I've created a corresponding task for each one in Things with deadline reminders.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW 3: EMOJI & SYMBOLS PICKER -->
+            <div id="view-emoji" class="w-full p-4 hidden">
+              <div class="text-xs text-zinc-400 mb-2 flex justify-between items-center">
+                <span>Frequently Used</span>
+                <span class="text-[10px] font-mono text-zinc-500">Click to copy</span>
+              </div>
+              <div class="grid grid-cols-8 sm:grid-cols-10 gap-2 text-2xl text-center py-2">
+                <button onclick="copyEmoji('🚀')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">🚀</button>
+                <button onclick="copyEmoji('🔥')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">🔥</button>
+                <button onclick="copyEmoji('✨')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">✨</button>
+                <button onclick="copyEmoji('💡')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">💡</button>
+                <button onclick="copyEmoji('⚡')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">⚡</button>
+                <button onclick="copyEmoji('🎉')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">🎉</button>
+                <button onclick="copyEmoji('❤️')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">❤️</button>
+                <button onclick="copyEmoji('💎')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">💎</button>
+                <button onclick="copyEmoji('⌘')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10 text-xl font-mono text-zinc-300">⌘</button>
+                <button onclick="copyEmoji('⌥')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10 text-xl font-mono text-zinc-300">⌥</button>
+                <button onclick="copyEmoji('⇧')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10 text-xl font-mono text-zinc-300">⇧</button>
+                <button onclick="copyEmoji('↵')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10 text-xl font-mono text-zinc-300">↵</button>
+                <button onclick="copyEmoji('')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10 text-lg font-mono text-zinc-300"></button>
+                <button onclick="copyEmoji('→')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10 text-lg font-mono text-zinc-300">→</button>
+                <button onclick="copyEmoji('👀')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">👀</button>
+                <button onclick="copyEmoji('🦾')" class="hover:scale-125 transition-transform p-1.5 rounded hover:bg-white/10">🦾</button>
+              </div>
+              <div id="emoji-toast" class="text-center text-xs text-green-400 font-mono mt-3 opacity-0 transition-opacity">Copied emoji to clipboard!</div>
+            </div>
+
+            <!-- VIEW 4: SNIPPETS & EXPANSION -->
+            <div id="view-snippets" class="w-full p-4 hidden">
+              <div class="text-xs text-zinc-400 mb-2">Live Text Expansion Demo</div>
+              <div class="bg-black/30 border border-white/10 rounded-lg p-3 text-xs space-y-2">
+                <div class="flex items-center justify-between text-zinc-400">
+                  <span>Keyword: <code class="text-red-400 bg-red-950/40 px-1 py-0.5 rounded">;addr</code></span>
+                  <span class="text-[10px] text-zinc-500 font-mono">Auto-expands</span>
+                </div>
+                <div class="p-2.5 bg-zinc-900 rounded border border-white/5 font-mono text-zinc-200">
+                  3rd Floor 1 Ashley Road, WA14 2DT Altrincham, Cheshire
+                </div>
+                <div class="flex items-center justify-between text-zinc-400 pt-2 border-t border-white/5">
+                  <span>Keyword: <code class="text-red-400 bg-red-950/40 px-1 py-0.5 rounded">;zoom</code></span>
+                  <span class="text-[10px] text-zinc-500 font-mono">Personal Meeting URL</span>
+                </div>
+                <div class="p-2.5 bg-zinc-900 rounded border border-white/5 font-mono text-zinc-200">
+                  https://raycast.zoom.us/my/sarah.design
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW 5: WINDOW MANAGEMENT -->
+            <div id="view-windows" class="w-full p-4 hidden">
+              <div class="text-xs text-zinc-400 mb-3">Snap and organize your desktop windows:</div>
+              <div class="grid grid-cols-3 gap-2.5 text-center text-xs">
+                <div class="p-3 bg-zinc-900 border border-white/10 rounded-lg hover:border-red-500/50 cursor-pointer transition-colors group">
+                  <div class="w-full h-8 bg-zinc-800 rounded mb-1.5 flex"><div class="w-1/2 h-full bg-red-500/40 rounded-l"></div></div>
+                  <span class="text-zinc-300 font-mono text-[11px]">Left Half</span>
+                </div>
+                <div class="p-3 bg-zinc-900 border border-white/10 rounded-lg hover:border-red-500/50 cursor-pointer transition-colors group">
+                  <div class="w-full h-8 bg-zinc-800 rounded mb-1.5 flex justify-end"><div class="w-1/2 h-full bg-red-500/40 rounded-r"></div></div>
+                  <span class="text-zinc-300 font-mono text-[11px]">Right Half</span>
+                </div>
+                <div class="p-3 bg-zinc-900 border border-white/10 rounded-lg hover:border-red-500/50 cursor-pointer transition-colors group">
+                  <div class="w-full h-8 bg-zinc-800 rounded mb-1.5"><div class="w-full h-full bg-red-500/40 rounded"></div></div>
+                  <span class="text-zinc-300 font-mono text-[11px]">Maximize</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Launcher Bottom Action Bar (Screenshot 1) -->
+          <div class="px-4 py-2 bg-[#121319] border-t border-white/5 flex items-center justify-between text-xs text-zinc-400">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+              <span id="window-status-label" class="text-zinc-300 font-medium">Clipboard History</span>
+            </div>
+            <div class="flex items-center gap-3 font-mono text-[11px]">
+              <span class="hidden sm:inline text-zinc-400">Copy to Clipboard <kbd class="bg-zinc-800 px-1 py-0.5 rounded text-zinc-300">↵</kbd></span>
+              <span class="text-zinc-600">|</span>
+              <span class="text-zinc-400">Actions <kbd class="bg-zinc-800 px-1 py-0.5 rounded text-zinc-300">⌘ K</kbd></span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- DOCK ICON SELECTOR (Screenshot 1) -->
+        <div class="mt-6 flex flex-col items-center gap-2 z-20">
+          <!-- Floating Tooltip -->
+          <div id="dock-tooltip" class="text-[11px] font-medium bg-black/90 text-white px-3 py-1 rounded-full border border-white/10 shadow-lg tracking-wide transition-all">
+            Clipboard History
+          </div>
+
+          <!-- The Dock Bar -->
+          <div class="bg-[#181920]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 flex items-center gap-2 shadow-2xl">
+            <!-- Icon 1: Clipboard -->
+            <button onclick="switchMacTab('clipboard', 'Clipboard History')" id="dock-btn-clipboard" class="dock-btn p-2.5 rounded-xl bg-white/15 text-white shadow transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+            </button>
+            <!-- Icon 2: AI Stars -->
+            <button onclick="switchMacTab('ai', 'Raycast AI Agent')" id="dock-btn-ai" class="dock-btn p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+              </svg>
+            </button>
+            <!-- Icon 3: Emoji -->
+            <button onclick="switchMacTab('emoji', 'Search Emojis & Symbols')" id="dock-btn-emoji" class="dock-btn p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <path stroke-linecap="round" stroke-width="2" d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+              </svg>
+            </button>
+            <!-- Icon 4: Snippets -->
+            <button onclick="switchMacTab('snippets', 'Snippets & Expansion')" id="dock-btn-snippets" class="dock-btn p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            </button>
+            <!-- Icon 5: Window Management -->
+            <button onclick="switchMacTab('windows', 'Window Management')" id="dock-btn-windows" class="dock-btn p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/>
+                <path stroke-linecap="round" stroke-width="2" d="M12 3v18M3 12h18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Dynamic Subtitle (Screenshot 1) -->
+    <div class="mt-8 text-center max-w-xl mx-auto">
+      <p id="mac-section-caption" class="text-sm sm:text-base text-zinc-300 leading-relaxed">
+        <strong class="text-white">Remember Everything.</strong> Stop playing Clipboard ping pong - with Clipboard History you'll never forget anything.
+      </p>
+    </div>
+  </section>
+
+  <!-- PHILOSOPHY / 4 PILLARS SECTION -->
+  <section class="py-24 px-4 max-w-6xl mx-auto relative z-10 border-t border-white/5">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+        It's not about saving time.<br>
+        <span class="text-zinc-500 font-medium">It's about feeling like you're never wasting it.</span>
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Pillar 1: Fast -->
+      <div class="glass-card rounded-2xl p-6 flex flex-col justify-between h-56 group">
+        <div>
+          <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 group-hover:scale-110 transition-transform">
+            ⚡
+          </div>
+          <h3 class="text-lg font-bold text-white mb-1">Fast.</h3>
+          <p class="text-xs text-zinc-400">Think in milliseconds. Native Swift engine renders instant responses with zero lag.</p>
+        </div>
+        <div class="text-xs font-mono text-zinc-500">Latency &lt; 15ms</div>
+      </div>
+
+      <!-- Pillar 2: Ergonomic -->
+      <div class="glass-card rounded-2xl p-6 flex flex-col justify-between h-56 group">
+        <div>
+          <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 group-hover:scale-110 transition-transform">
+            ⌨️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-1">Ergonomic.</h3>
+          <p class="text-xs text-zinc-400">Keyboard First. Keep your hands on the keys and reach any app or command instantly.</p>
+        </div>
+        <div class="text-xs font-mono text-zinc-500">Muscle memory</div>
+      </div>
+
+      <!-- Pillar 3: Personal -->
+      <div class="glass-card rounded-2xl p-6 flex flex-col justify-between h-56 group">
+        <div>
+          <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 group-hover:scale-110 transition-transform">
+            🎨
+          </div>
+          <h3 class="text-lg font-bold text-white mb-1">Personal.</h3>
+          <p class="text-xs text-zinc-400">Your tools, your way. Custom aliases, script commands, hotkeys and UI customization.</p>
+        </div>
+        <div class="text-xs font-mono text-zinc-500">100% Tailored</div>
+      </div>
+
+      <!-- Pillar 4: Reliable -->
+      <div class="glass-card rounded-2xl p-6 flex flex-col justify-between h-56 group">
+        <div>
+          <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 group-hover:scale-110 transition-transform">
+            🛡️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-1">Reliable.</h3>
+          <p class="text-xs text-zinc-400">99.8% crash-free rate. Built for daily mission-critical engineering workflows.</p>
+        </div>
+        <div class="text-xs font-mono text-zinc-500">99.8% Crash-free</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXTENSIONS STORE SECTION ("There's an extension for that.") -->
+  <section id="store" class="py-24 px-4 max-w-6xl mx-auto relative z-10 border-t border-white/5">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
+        There's an extension for that.
+      </h2>
+      <p class="text-zinc-400 text-base sm:text-lg">
+        Use your favorite tools without even opening them.
+      </p>
+    </div>
+
+    <!-- Category Filter Tabs + Search -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+      <div class="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-xl border border-white/5 text-xs font-medium">
+        <button onclick="filterExtensions('all')" id="ext-filter-all" class="ext-btn px-3 py-1.5 rounded-lg bg-white/10 text-white font-semibold">All</button>
+        <button onclick="filterExtensions('productivity')" id="ext-filter-productivity" class="ext-btn px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white">Productivity</button>
+        <button onclick="filterExtensions('engineering')" id="ext-filter-engineering" class="ext-btn px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white">Engineering</button>
+        <button onclick="filterExtensions('design')" id="ext-filter-design" class="ext-btn px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white">Design</button>
+        <button onclick="filterExtensions('writing')" id="ext-filter-writing" class="ext-btn px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white">Writing</button>
+      </div>
+
+      <div class="relative w-full sm:w-64">
+        <input type="text" id="ext-search" oninput="searchExtensions(this.value)" placeholder="Search extensions..."
+               class="w-full bg-zinc-900/80 border border-white/10 rounded-xl px-3.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500/50">
+      </div>
+    </div>
+
+    <!-- Extensions Grid -->
+    <div id="extensions-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      
+      <!-- Linear -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="engineering productivity">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#5E6AD2]/15 border border-[#5E6AD2]/30 flex items-center justify-center text-[#5E6AD2] shrink-0 font-bold">
+            📐
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">Linear</h4>
+              <span class="text-[10px] font-mono bg-zinc-800 text-zinc-400 px-1.5 py-0.2 rounded">Official</span>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Create, search and modify issues without leaving your keyboard.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>180k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+      <!-- Spotify -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="productivity">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#1DB954]/15 border border-[#1DB954]/30 flex items-center justify-center text-[#1DB954] shrink-0 font-bold">
+            🎵
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">Spotify</h4>
+              <span class="text-[10px] font-mono bg-zinc-800 text-zinc-400 px-1.5 py-0.2 rounded">Media</span>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Search music and podcasts, browse library, and control playback.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>250k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+      <!-- Google Translate -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="writing productivity">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#4285F4]/15 border border-[#4285F4]/30 flex items-center justify-center text-[#4285F4] shrink-0 font-bold">
+            🌐
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">Google Translate</h4>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Effortlessly translate words and paragraphs into multiple languages.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>140k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+      <!-- Arc Browser -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="productivity">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#FF4F64]/15 border border-[#FF4F64]/30 flex items-center justify-center text-[#FF4F64] shrink-0 font-bold">
+            🌈
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">Arc</h4>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Navigate open tabs and search through your browser history.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>95k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+      <!-- TinyPNG -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="design">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#26B99A]/15 border border-[#26B99A]/30 flex items-center justify-center text-[#26B99A] shrink-0 font-bold">
+            🐼
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">TinyPNG</h4>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Compress selected images in Finder instantly with TinyPNG API.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>82k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+      <!-- 1Password -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="productivity engineering">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#0A85EA]/15 border border-[#0A85EA]/30 flex items-center justify-center text-[#0A85EA] shrink-0 font-bold">
+            🔑
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">1Password</h4>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Easily grab any password, 2FA token or credential from your vaults.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>210k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+      <!-- Notion -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="writing productivity">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 font-bold">
+            📝
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">Notion</h4>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">The fastest way to search, create and append Notion pages.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>165k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+      <!-- GitHub -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="engineering">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 font-bold">
+            🐙
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">GitHub</h4>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Review pull requests, issues, repo notifications, and workflow runs.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>310k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+      <!-- CleanShot X -->
+      <div class="ext-card glass-card rounded-xl p-5 flex flex-col justify-between" data-category="design productivity">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 font-bold">
+            📸
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-white">CleanShot X</h4>
+            </div>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Trigger screen captures, OCR text scanning and pin screenshots.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span>125k+ installs</span>
+          <span class="text-red-400 hover:underline cursor-pointer">Install ↵</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Store Footer Callout -->
+    <div class="mt-10 text-center">
+      <a href="https://www.raycast.com/store" target="_blank" class="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300 hover:text-white group">
+        <span>Plus thousands more... Browse the store</span>
+        <span class="group-hover:translate-x-1 transition-transform">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- AI AGENT SHOWCASE SECTION -->
+  <section id="ai" class="py-24 px-4 max-w-6xl mx-auto relative z-10 border-t border-white/5">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      
+      <div class="lg:col-span-5">
+        <span class="text-xs font-mono font-semibold text-red-400 tracking-wider uppercase mb-2 block">AI Agent</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
+          Meet your new virtual assistant.
+        </h2>
+        <p class="text-zinc-400 text-sm sm:text-base leading-relaxed mb-6">
+          Raycast AI uses the tools you already rely on to get work done. From scheduling meetings to resolving issues, let AI handle multi-step actions across your apps.
+        </p>
+        
+        <div class="space-y-3 mb-8">
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 text-lg">⚡</span>
+            <div>
+              <h5 class="text-xs font-semibold text-white">Quick AI &amp; Tab Key</h5>
+              <p class="text-xs text-zinc-400">Press <kbd class="bg-zinc-800 px-1 py-0.5 rounded text-zinc-300 font-mono">⇥ Tab</kbd> in search to instantly query Claude 3.7 or GPT-4o.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 text-lg">🔌</span>
+            <div>
+              <h5 class="text-xs font-semibold text-white">AI Extensions &amp; Tool Calling</h5>
+              <p class="text-xs text-zinc-400">Connect Linear, GitHub, Things, Slack and Google Calendar directly.</p>
+            </div>
+          </div>
+        </div>
+
+        <a href="#ai-learn" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-900 text-xs font-medium text-white border border-white/10 hover:border-red-500/40 transition-colors">
+          <span>Learn more about Raycast AI</span>
+          <span>→</span>
+        </a>
+      </div>
+
+      <!-- Interactive AI Agent Terminal Preview -->
+      <div class="lg:col-span-7">
+        <div class="glass-card rounded-2xl p-6 border border-white/10 shadow-2xl relative overflow-hidden">
+          <div class="flex items-center justify-between pb-4 border-b border-white/5">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+              <span class="text-xs font-mono text-zinc-300">Claude 3.7 Sonnet / Reasoning</span>
+            </div>
+            <span class="text-[10px] font-mono text-zinc-500">Raycast Agent v2.4</span>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <!-- User Prompt -->
+            <div class="bg-zinc-900/80 rounded-xl p-3 border border-white/5 flex items-start gap-2.5">
+              <span class="text-zinc-400 text-xs font-mono">👤</span>
+              <p class="text-xs text-zinc-200">
+                "Read my transcript from last week's sync and add action items to Things with deadlines."
+              </p>
+            </div>
+
+            <!-- Agent Tool Actions Execution -->
+            <div class="space-y-2 pl-4 border-l-2 border-red-500/40 font-mono text-[11px]">
+              <div class="flex items-center gap-2 text-zinc-400">
+                <span class="text-red-400 animate-spin">◐</span>
+                <span>Reading Granola meeting notes...</span>
+              </div>
+              <div class="flex items-center gap-2 text-zinc-400">
+                <span class="text-green-400">✓</span>
+                <span>Extracted 3 action items: API spec review, PR #142 merge, Design sign-off</span>
+              </div>
+              <div class="flex items-center gap-2 text-green-400">
+                <span>✓</span>
+                <span>Synced with Things 3 (Due tomorrow at 5:00 PM)</span>
+              </div>
+            </div>
+
+            <!-- Response Bubble -->
+            <div class="bg-red-950/20 border border-red-500/20 rounded-xl p-3.5 text-xs text-zinc-300 leading-relaxed">
+              I've processed the transcript. Added 3 action items to your "Work" project in Things with priority tags and set your calendar focus mode.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF / TESTIMONIALS SECTION -->
+  <section class="py-24 px-4 max-w-6xl mx-auto relative z-10 border-t border-white/5">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
+        Built for professionals like you.
+      </h2>
+      <p class="text-zinc-400 text-base">
+        Used by seriously productive people.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      
+      <!-- Guillermo Rauch -->
+      <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-zinc-700 to-zinc-500 flex items-center justify-center font-bold text-white text-xs">
+                GR
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">Guillermo Rauch</h4>
+                <p class="text-[11px] text-zinc-400 font-mono">@rauchg · CEO, Vercel</p>
+              </div>
+            </div>
+            <span class="text-xs text-zinc-500">𝕏</span>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            "Raycast is incrementally turning my Mac into an AI-native operating system and I'm so here for it."
+          </p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+          <span>Favorite: <strong class="text-zinc-300">AI Chat</strong></span>
+          <span class="text-red-400">Vercel Extension</span>
+        </div>
+      </div>
+
+      <!-- Marques Brownlee -->
+      <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-red-600 to-red-400 flex items-center justify-center font-bold text-white text-xs">
+                MB
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">Marques Brownlee</h4>
+                <p class="text-[11px] text-zinc-400 font-mono">@MKBHD · Creator</p>
+              </div>
+            </div>
+            <span class="text-xs text-zinc-500">𝕏</span>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            "Raycast has completely replaced Spotlight on all my Macs. Window management and clipboard history alone make it essential."
+          </p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+          <span>Favorite: <strong class="text-zinc-300">Window Manager</strong></span>
+          <span class="text-red-400">Calculator</span>
+        </div>
+      </div>
+
+      <!-- Adam Wathan -->
+      <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center font-bold text-white text-xs">
+                AW
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">Adam Wathan</h4>
+                <p class="text-[11px] text-zinc-400 font-mono">@adamwathan · Tailwind CSS</p>
+              </div>
+            </div>
+            <span class="text-xs text-zinc-500">𝕏</span>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            "The developer experience of building Raycast extensions in React and TypeScript is legitimately one of the best I've ever seen."
+          </p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+          <span>Favorite: <strong class="text-zinc-300">Extension API</strong></span>
+          <span class="text-red-400">Tailwind Docs</span>
+        </div>
+      </div>
+
+      <!-- Wes Bos -->
+      <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-600 to-amber-400 flex items-center justify-center font-bold text-white text-xs">
+                WB
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">Wes Bos</h4>
+                <p class="text-[11px] text-zinc-400 font-mono">@wesbos · SyntaxFM</p>
+              </div>
+            </div>
+            <span class="text-xs text-zinc-500">𝕏</span>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            "I write custom bash scripts and trigger them instantly from Raycast with hotkeys. Can't imagine using a Mac without it."
+          </p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+          <span>Favorite: <strong class="text-zinc-300">Script Commands</strong></span>
+          <span class="text-red-400">Node Runner</span>
+        </div>
+      </div>
+
+      <!-- Koen Bok -->
+      <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white text-xs">
+                KB
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">Koen Bok</h4>
+                <p class="text-[11px] text-zinc-400 font-mono">@koenbok · Founder Framer</p>
+              </div>
+            </div>
+            <span class="text-xs text-zinc-500">𝕏</span>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            "The speed and polish of Raycast is reference quality software design. Every interaction feels instant."
+          </p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+          <span>Favorite: <strong class="text-zinc-300">Quicklinks</strong></span>
+          <span class="text-red-400">Framer Projects</span>
+        </div>
+      </div>
+
+      <!-- Max Stoiber -->
+      <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-600 to-rose-400 flex items-center justify-center font-bold text-white text-xs">
+                MS
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">Max Stoiber</h4>
+                <p class="text-[11px] text-zinc-400 font-mono">@mxstbr · CEO Stellate</p>
+              </div>
+            </div>
+            <span class="text-xs text-zinc-500">𝕏</span>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            "I forked the Notion Search extension so I can easily paste tokenized doc links into Slack. Unbeatable flexibility."
+          </p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+          <span>Favorite: <strong class="text-zinc-300">Snippets</strong></span>
+          <span class="text-red-400">Notion Search</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- COMMUNITY SECTION (Faithful to Screenshot 3) -->
+  <section id="community" class="py-24 px-4 max-w-6xl mx-auto relative z-10 border-t border-white/5">
+    <div class="text-center max-w-2xl mx-auto mb-14">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
+        Stay in the loop.
+      </h2>
+      <p class="text-zinc-400 text-base sm:text-lg">
+        Join the community and learn how other people get the most out of Raycast.
+      </p>
+    </div>
+
+    <!-- Side-by-side Slack & X/Twitter Community Cards (Screenshot 3) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-16">
+      
+      <!-- Slack Card -->
+      <div class="glass-card rounded-2xl p-6 sm:p-8 flex flex-col justify-between group">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <!-- Slack Icon -->
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                  <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" fill="#E01E5A"/>
+                  <path d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" fill="#36C5F0"/>
+                  <path d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z" fill="#2EB67D"/>
+                  <path d="M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.527 2.527 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" fill="#ECB22E"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-bold text-white">Slack</h3>
+            </div>
+            <span class="text-xs font-mono text-zinc-400">37k members</span>
+          </div>
+
+          <p class="text-sm text-zinc-400 leading-relaxed mb-6">
+            Get the inside track on new features and learn how other people use Raycast.
+          </p>
+        </div>
+
+        <a href="https://raycast.com/community" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-semibold text-white group-hover:text-red-400 transition-colors">
+          <span>Join</span>
+          <span class="group-hover:translate-x-1 transition-transform">→</span>
+        </a>
+      </div>
+
+      <!-- X / Twitter Card -->
+      <div class="glass-card rounded-2xl p-6 sm:p-8 flex flex-col justify-between group">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xl font-bold">
+                𝕏
+              </div>
+              <h3 class="text-xl font-bold text-white">X/Twitter</h3>
+            </div>
+            <span class="text-xs font-mono text-zinc-400">90k followers</span>
+          </div>
+
+          <p class="text-sm text-zinc-400 leading-relaxed mb-6">
+            Keep up to date with the latest releases, features and improvements.
+          </p>
+        </div>
+
+        <a href="https://twitter.com/raycastapp" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-semibold text-white group-hover:text-red-400 transition-colors">
+          <span>Follow</span>
+          <span class="group-hover:translate-x-1 transition-transform">→</span>
+        </a>
+      </div>
+
+    </div>
+
+    <!-- YouTube Video Showcase Carousel (Screenshot 3) -->
+    <div class="relative">
+      <div class="text-center mb-8">
+        <p class="text-sm text-zinc-400">
+          Check out our YouTube channel to learn about features you didn't even know existed.
+        </p>
+      </div>
+
+      <!-- Video Cards Track -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        
+        <!-- Video 1 -->
+        <a href="https://youtube.com/@RaycastApp" target="_blank" class="group flex flex-col gap-2.5">
+          <div class="aspect-video w-full rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-950 border border-white/10 relative overflow-hidden flex items-center justify-center group-hover:border-red-500/40 transition-all">
+            <div class="w-10 h-10 rounded-full bg-red-600/80 flex items-center justify-center text-white text-xs pl-0.5 shadow-lg group-hover:scale-110 transition-transform">
+              ▶
+            </div>
+            <div class="absolute inset-0 bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          <span class="text-xs font-medium text-zinc-300 group-hover:text-white line-clamp-2 transition-colors">
+            Raycast tricks to up your game
+          </span>
+        </a>
+
+        <!-- Video 2 -->
+        <a href="https://youtube.com/@RaycastApp" target="_blank" class="group flex flex-col gap-2.5">
+          <div class="aspect-video w-full rounded-xl bg-gradient-to-br from-neutral-800 to-stone-950 border border-white/10 relative overflow-hidden flex items-center justify-center group-hover:border-red-500/40 transition-all">
+            <div class="w-10 h-10 rounded-full bg-red-600/80 flex items-center justify-center text-white text-xs pl-0.5 shadow-lg group-hover:scale-110 transition-transform">
+              ▶
+            </div>
+            <div class="absolute inset-0 bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          <span class="text-xs font-medium text-zinc-300 group-hover:text-white line-clamp-2 transition-colors">
+            Our Extension Picks for UI Developers
+          </span>
+        </a>
+
+        <!-- Video 3 -->
+        <a href="https://youtube.com/@RaycastApp" target="_blank" class="group flex flex-col gap-2.5">
+          <div class="aspect-video w-full rounded-xl bg-gradient-to-br from-emerald-950 to-zinc-950 border border-white/10 relative overflow-hidden flex items-center justify-center group-hover:border-red-500/40 transition-all">
+            <div class="w-10 h-10 rounded-full bg-red-600/80 flex items-center justify-center text-white text-xs pl-0.5 shadow-lg group-hover:scale-110 transition-transform">
+              ▶
+            </div>
+            <div class="absolute inset-0 bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          <span class="text-xs font-medium text-zinc-300 group-hover:text-white line-clamp-2 transition-colors">
+            Introducing Raycast Focus
+          </span>
+        </a>
+
+        <!-- Video 4 -->
+        <a href="https://youtube.com/@RaycastApp" target="_blank" class="group flex flex-col gap-2.5">
+          <div class="aspect-video w-full rounded-xl bg-gradient-to-br from-purple-950 to-zinc-950 border border-white/10 relative overflow-hidden flex items-center justify-center group-hover:border-red-500/40 transition-all">
+            <div class="w-10 h-10 rounded-full bg-red-600/80 flex items-center justify-center text-white text-xs pl-0.5 shadow-lg group-hover:scale-110 transition-transform">
+              ▶
+            </div>
+            <div class="absolute inset-0 bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          <span class="text-xs font-medium text-zinc-300 group-hover:text-white line-clamp-2 transition-colors">
+            Mastering Quicklinks in Raycast
+          </span>
+        </a>
+
+        <!-- Video 5 -->
+        <a href="https://youtube.com/@RaycastApp" target="_blank" class="group flex flex-col gap-2.5">
+          <div class="aspect-video w-full rounded-xl bg-gradient-to-br from-zinc-900 to-black border border-white/10 relative overflow-hidden flex items-center justify-center group-hover:border-red-500/40 transition-all">
+            <div class="w-10 h-10 rounded-full bg-red-600/80 flex items-center justify-center text-white text-xs pl-0.5 shadow-lg group-hover:scale-110 transition-transform">
+              ▶
+            </div>
+            <div class="absolute inset-0 bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          <span class="text-xs font-medium text-zinc-300 group-hover:text-white line-clamp-2 transition-colors">
+            Raycast Notes is Finally Out
+          </span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- DEVELOPER API / EXTENSIBILITY SECTION -->
+  <section class="py-24 px-4 max-w-6xl mx-auto relative z-10 border-t border-white/5">
+    <div class="text-center max-w-2xl mx-auto mb-14">
+      <span class="text-xs font-mono font-semibold text-red-400 tracking-wider uppercase mb-2 block">Extensibility</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
+        Build the perfect tools.
+      </h2>
+      <p class="text-zinc-400 text-sm sm:text-base">
+        Our extension API is designed to allow anyone with web development skills to unleash the power of Raycast.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div class="glass-card rounded-xl p-5">
+        <div class="text-red-400 text-lg mb-2 font-mono">01</div>
+        <h4 class="text-sm font-bold text-white mb-1">Cross-platform</h4>
+        <p class="text-xs text-zinc-400">Build your extension once and make it available to Raycast users on both macOS and Windows.</p>
+      </div>
+
+      <div class="glass-card rounded-xl p-5">
+        <div class="text-red-400 text-lg mb-2 font-mono">02</div>
+        <h4 class="text-sm font-bold text-white mb-1">Built-in UI</h4>
+        <p class="text-xs text-zinc-400">Our UI component library allows you to concentrate on logic while we push the pixels.</p>
+      </div>
+
+      <div class="glass-card rounded-xl p-5">
+        <div class="text-red-400 text-lg mb-2 font-mono">03</div>
+        <h4 class="text-sm font-bold text-white mb-1">Batteries included</h4>
+        <p class="text-xs text-zinc-400">A strongly typed TypeScript API, hot-reloading and modern tooling that make it a blast to work with.</p>
+      </div>
+
+      <div class="glass-card rounded-xl p-5">
+        <div class="text-red-400 text-lg mb-2 font-mono">04</div>
+        <h4 class="text-sm font-bold text-white mb-1">Publish to the Store</h4>
+        <p class="text-xs text-zinc-400">Submit your extension to the Raycast Store and share it with hundreds of thousands of users.</p>
+      </div>
+    </div>
+
+    <!-- Code Editor Box -->
+    <div class="max-w-3xl mx-auto bg-zinc-950/90 rounded-2xl border border-white/10 shadow-2xl overflow-hidden font-mono text-xs">
+      <div class="px-4 py-2.5 bg-zinc-900/60 border-b border-white/5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+          <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+          <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+          <span class="ml-2 text-zinc-400 text-[11px]">src/my-command.tsx</span>
+        </div>
+        <span class="text-zinc-500 text-[10px]">TypeScript · React</span>
+      </div>
+      <div class="p-4 overflow-x-auto text-zinc-300 leading-relaxed">
+        <pre><code><span class="text-purple-400">import</span> { List, ActionPanel, Action, showToast } <span class="text-purple-400">from</span> <span class="text-green-300">"@raycast/api"</span>;
+
+<span class="text-purple-400">export default function</span> <span class="text-blue-400">Command</span>() {
+  <span class="text-purple-400">return</span> (
+    &lt;<span class="text-red-400">List</span> searchBarPlaceholder=<span class="text-green-300">"Search fast..."</span>&gt;
+      &lt;<span class="text-red-400">List.Item</span>
+        title=<span class="text-green-300">"Create Pull Request"</span>
+        actions={
+          &lt;<span class="text-red-400">ActionPanel</span>&gt;
+            &lt;<span class="text-red-400">Action</span> title=<span class="text-green-300">"Open"</span> onAction={() =&gt; showToast({ title: <span class="text-green-300">"Created!"</span> })} /&gt;
+          &lt;/<span class="text-red-400">ActionPanel</span>&gt;
+        }
+      /&gt;
+    &lt;/<span class="text-red-400">List</span>&gt;
+  );
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTERACTIVE 3D KEYBOARD FOOTER (Faithful to Screenshot 4) -->
+  <section id="keyboard-section" class="py-24 px-4 max-w-6xl mx-auto relative z-10 border-t border-white/5 overflow-hidden">
+    
+    <!-- Header over keyboard -->
+    <div class="text-center max-w-xl mx-auto mb-10">
+      <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight mb-3">
+        Take the short way.
+      </h2>
+      <p class="text-zinc-400 text-sm sm:text-base">
+        Download and use Raycast for free.
+      </p>
+    </div>
+
+    <!-- THE KEYBOARD (Screenshot 4: Curved perspective with glowing Command and Space) -->
+    <div class="relative max-w-4xl mx-auto pt-6 pb-12 flex flex-col items-center select-none">
+      
+      <!-- Ambient red glow originating behind Command and Spacebar -->
+      <div class="absolute bottom-12 w-96 h-40 bg-red-600/30 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Keyboard Container with 3D Bevel and Perspective -->
+      <div class="w-full bg-[#0E1015]/90 p-4 sm:p-6 rounded-3xl border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] backdrop-blur-xl">
+        
+        <!-- Row 1: Function Keys -->
+        <div class="grid grid-cols-13 gap-1.5 sm:gap-2 mb-2 text-[10px] sm:text-xs font-mono text-zinc-400">
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">esc</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F1</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F2</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F3</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F4</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F5</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F6</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F7</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F8</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F9</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F10</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F11</div>
+          <div class="ray-key h-8 sm:h-9 rounded-md flex items-center justify-center">F12</div>
+        </div>
+
+        <!-- Row 2: Numbers -->
+        <div class="flex gap-1.5 sm:gap-2 mb-2 text-xs font-mono text-zinc-300">
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">~</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">1</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">2</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">3</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">4</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">5</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">6</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">7</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">8</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">9</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">0</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">-</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">=</div>
+          <div class="ray-key w-12 sm:w-16 h-9 sm:h-11 rounded-md flex items-center justify-center text-[10px] sm:text-xs">delete</div>
+        </div>
+
+        <!-- Row 3: QWERTY -->
+        <div class="flex gap-1.5 sm:gap-2 mb-2 text-xs font-mono text-zinc-300">
+          <div class="ray-key w-12 sm:w-16 h-9 sm:h-11 rounded-md flex items-center justify-center text-[10px] sm:text-xs">tab</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-q">Q</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-w">W</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-e">E</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-r">R</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-t">T</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-y">Y</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-u">U</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-i">I</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-o">O</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-p">P</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">[</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">]</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">\</div>
+        </div>
+
+        <!-- Row 4: ASDFGHJKL -->
+        <div class="flex gap-1.5 sm:gap-2 mb-2 text-xs font-mono text-zinc-300">
+          <div class="ray-key w-14 sm:w-20 h-9 sm:h-11 rounded-md flex items-center justify-center text-[10px] sm:text-xs">caps</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-a">A</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-s">S</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-d">D</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-f">F</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-g">G</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-h">H</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-j">J</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-k">K</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-l">L</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">;</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">'</div>
+          <div class="ray-key w-14 sm:w-20 h-9 sm:h-11 rounded-md flex items-center justify-center text-[10px] sm:text-xs">return</div>
+        </div>
+
+        <!-- Row 5: ZXCVBNM -->
+        <div class="flex gap-1.5 sm:gap-2 mb-2 text-xs font-mono text-zinc-300">
+          <div class="ray-key w-16 sm:w-24 h-9 sm:h-11 rounded-md flex items-center justify-center text-[10px] sm:text-xs">shift</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-z">Z</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-x">X</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-c">C</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-v">V</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-b">B</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-n">N</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center" id="key-m">M</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">&lt;</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">&gt;</div>
+          <div class="ray-key flex-1 h-9 sm:h-11 rounded-md flex items-center justify-center">?</div>
+          <div class="ray-key w-16 sm:w-24 h-9 sm:h-11 rounded-md flex items-center justify-center text-[10px] sm:text-xs">shift</div>
+        </div>
+
+        <!-- Row 6: BOTTOM ROW WITH ICONIC GLOWING COMMAND AND SPACEBAR (Screenshot 4) -->
+        <div class="flex gap-1.5 sm:gap-2 text-xs font-mono text-zinc-300">
+          <div class="ray-key w-10 sm:w-14 h-10 sm:h-12 rounded-md flex items-center justify-center text-[10px]">fn</div>
+          <div class="ray-key w-10 sm:w-14 h-10 sm:h-12 rounded-md flex items-center justify-center text-[10px]">control</div>
+          <div class="ray-key w-10 sm:w-14 h-10 sm:h-12 rounded-md flex items-center justify-center text-[10px]">option</div>
+          
+          <!-- GLOWING COMMAND KEY (Screenshot 4) -->
+          <div onclick="openCommandPalette()" id="key-command" class="ray-key ray-key-glow w-16 sm:w-24 h-10 sm:h-12 rounded-md flex flex-col items-center justify-center cursor-pointer group transition-all duration-300">
+            <span class="text-zinc-400 group-hover:text-red-400 text-xs">⌘</span>
+            <span class="text-red-400 font-semibold text-[10px] tracking-tight">command</span>
+          </div>
+
+          <!-- GLOWING SPACEBAR (Screenshot 4) -->
+          <div onclick="openCommandPalette()" id="key-spacebar" class="ray-key ray-key-glow flex-1 h-10 sm:h-12 rounded-md flex items-center justify-center cursor-pointer group transition-all duration-300 relative overflow-hidden">
+            <div class="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-80"></div>
+            <span class="text-[10px] text-zinc-500 group-hover:text-red-300 font-mono">Press ⌘ + Space to launch</span>
+          </div>
+
+          <!-- Right Command & Option -->
+          <div class="ray-key w-16 sm:w-20 h-10 sm:h-12 rounded-md flex flex-col items-center justify-center text-[10px]">
+            <span class="text-zinc-500">⌘</span>
+            <span class="text-zinc-400">command</span>
+          </div>
+          <div class="ray-key w-10 sm:w-14 h-10 sm:h-12 rounded-md flex items-center justify-center text-[10px]">option</div>
+        </div>
+
+      </div>
+
+      <!-- Footer CTA Buttons -->
+      <div class="mt-12 flex flex-col items-center gap-3">
+        <a href="#download" class="flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-zinc-100 text-zinc-950 font-semibold text-sm shadow-xl transition-all duration-200 hover:scale-[1.03]">
+          <svg class="w-4 h-4 fill-current text-black" viewBox="0 0 170 170">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.67-7.81-11.94-14.3-5.26-8.03-9.36-16.71-12.3-26.04-3.69-11.72-5.54-22.9-5.54-33.54 0-13.46 3.37-24.87 10.12-34.22 6.74-9.35 15.34-14.15 25.79-14.42 4.36 0 9.28 1.15 14.75 3.46 5.48 2.3 9.4 3.51 11.79 3.62 1.95 0 6.08-1.28 12.38-3.84 6.31-2.56 11.53-3.62 15.66-3.18 12.4.67 21.6 5.38 27.6 14.15-11.08 6.74-16.51 16.08-16.31 28.02.2 9.57 3.99 17.58 11.37 24.03 7.37 6.45 15.89 10.22 25.55 11.31-2.25 7.17-5.13 14.3-8.64 21.39zm-32.96-107.5c0-6.74 2.45-13.1 7.37-19.08 4.92-5.98 11.13-9.67 18.63-11.08.33 1.08.49 2.17.49 3.25 0 6.63-2.58 13.04-7.75 19.23-5.16 6.18-11.23 9.77-18.2 10.77-.1-.99-.54-2.02-.54-3.09z"/>
+          </svg>
+          <span>Download for Mac</span>
+        </a>
+
+        <span class="text-xs text-zinc-500 font-mono">macOS Tahoe and Apple Silicon required</span>
+
+        <div class="flex items-center gap-2 bg-zinc-900 border border-white/5 px-3 py-1.5 rounded-lg text-xs font-mono text-zinc-400 mt-2">
+          <span>brew install --cask raycast</span>
+          <button onclick="copyHomebrewCommand()" class="hover:text-white text-zinc-500 ml-2" title="Copy command">
+            📋
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- INTERACTIVE RAYCAST SPOTLIGHT PALETTE MODAL (Triggered by Cmd+K or clicking Command/Space) -->
+  <div id="command-palette-backdrop" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-start justify-center pt-24 px-4 hidden transition-opacity" onclick="closeCommandPalette(event)">
+    <div id="command-palette-modal" class="w-full max-w-xl bg-[#14151C] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+      
+      <!-- Palette Search Input -->
+      <div class="px-4 py-3.5 border-b border-white/5 flex items-center gap-3">
+        <span class="text-red-400">⚡</span>
+        <input type="text" id="palette-input" oninput="filterPalette(this.value)" placeholder="Search commands, extensions, actions..." 
+               class="w-full bg-transparent text-sm text-white focus:outline-none placeholder-zinc-500 font-medium">
+        <kbd class="text-[10px] font-mono bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-700">ESC</kbd>
+      </div>
+
+      <!-- Action Items List -->
+      <div id="palette-list" class="max-h-80 overflow-y-auto p-2 space-y-1 text-xs">
+        <div onclick="executePaletteAction('download')" class="palette-item flex items-center justify-between p-2.5 rounded-lg hover:bg-red-600/20 hover:text-white text-zinc-300 cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <span></span>
+            <span class="font-medium">Download Raycast for macOS</span>
+          </div>
+          <span class="text-[10px] font-mono text-zinc-500 group-hover:text-red-300">Action ↵</span>
+        </div>
+
+        <div onclick="executePaletteAction('brew')" class="palette-item flex items-center justify-between p-2.5 rounded-lg hover:bg-red-600/20 hover:text-white text-zinc-300 cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <span>🍺</span>
+            <span class="font-medium">Copy Homebrew Install Command</span>
+          </div>
+          <span class="text-[10px] font-mono text-zinc-500 group-hover:text-red-300">Copy ↵</span>
+        </div>
+
+        <div onclick="executePaletteAction('clipboard')" class="palette-item flex items-center justify-between p-2.5 rounded-lg hover:bg-red-600/20 hover:text-white text-zinc-300 cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <span>📋</span>
+            <span class="font-medium">Inspect Clipboard History Demo</span>
+          </div>
+          <span class="text-[10px] font-mono text-zinc-500 group-hover:text-red-300">Navigate ↵</span>
+        </div>
+
+        <div onclick="executePaletteAction('ai')" class="palette-item flex items-center justify-between p-2.5 rounded-lg hover:bg-red-600/20 hover:text-white text-zinc-300 cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <span>✨</span>
+            <span class="font-medium">Inspect Raycast AI Agent</span>
+          </div>
+          <span class="text-[10px] font-mono text-zinc-500 group-hover:text-red-300">Navigate ↵</span>
+        </div>
+
+        <div onclick="executePaletteAction('store')" class="palette-item flex items-center justify-between p-2.5 rounded-lg hover:bg-red-600/20 hover:text-white text-zinc-300 cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <span>🛍</span>
+            <span class="font-medium">Browse Extension Store</span>
+          </div>
+          <span class="text-[10px] font-mono text-zinc-500 group-hover:text-red-300">Explore ↵</span>
+        </div>
+
+        <div onclick="executePaletteAction('keyboard')" class="palette-item flex items-center justify-between p-2.5 rounded-lg hover:bg-red-600/20 hover:text-white text-zinc-300 cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <span>⌨️</span>
+            <span class="font-medium">View Raycast 3D Keyboard</span>
+          </div>
+          <span class="text-[10px] font-mono text-zinc-500 group-hover:text-red-300">Scroll ↵</span>
+        </div>
+
+        <div onclick="executePaletteAction('slack')" class="palette-item flex items-center justify-between p-2.5 rounded-lg hover:bg-red-600/20 hover:text-white text-zinc-300 cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <span>💬</span>
+            <span class="font-medium">Join 37k+ Community on Slack</span>
+          </div>
+          <span class="text-[10px] font-mono text-zinc-500 group-hover:text-red-300">External ↗</span>
+        </div>
+      </div>
+
+      <!-- Palette Footer -->
+      <div class="px-4 py-2 bg-[#0F1015] border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+        <span>Use <kbd class="bg-zinc-800 text-zinc-300 px-1 py-0.5 rounded">↑</kbd> <kbd class="bg-zinc-800 text-zinc-300 px-1 py-0.5 rounded">↓</kbd> to navigate</span>
+        <span>Select <kbd class="bg-zinc-800 text-zinc-300 px-1 py-0.5 rounded">↵</kbd></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPREHENSIVE FOOTER -->
+  <footer class="pt-20 pb-16 px-4 max-w-6xl mx-auto border-t border-white/5 text-xs text-zinc-400 relative z-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-16">
+      
+      <!-- Col 1: Product -->
+      <div>
+        <h5 class="text-white font-semibold mb-3">Product</h5>
+        <ul class="space-y-2">
+          <li><a href="#store" class="hover:text-white transition-colors">Store</a></li>
+          <li><a href="#pro" class="hover:text-white transition-colors">Pro</a></li>
+          <li><a href="#teams" class="hover:text-white transition-colors">Teams</a></li>
+          <li><a href="#pricing" class="hover:text-white transition-colors">Pricing</a></li>
+          <li><a href="#changelog" class="hover:text-white transition-colors">Changelog</a></li>
+          <li><a href="#ios" class="hover:text-white transition-colors">iOS</a></li>
+          <li><a href="#windows" class="hover:text-white transition-colors">Windows</a></li>
+          <li><a href="#raycast2" class="hover:text-white transition-colors">Raycast 2.0</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 2: Core Features -->
+      <div>
+        <h5 class="text-white font-semibold mb-3">Core Features</h5>
+        <ul class="space-y-2">
+          <li><a href="#ai" class="hover:text-white transition-colors">Raycast AI</a></li>
+          <li><a href="#notes" class="hover:text-white transition-colors">Raycast Notes</a></li>
+          <li><a href="#focus" class="hover:text-white transition-colors">Raycast Focus</a></li>
+          <li><a href="#demo" class="hover:text-white transition-colors">Clipboard History</a></li>
+          <li><a href="#demo" class="hover:text-white transition-colors">Window Management</a></li>
+          <li><a href="#demo" class="hover:text-white transition-colors">Snippets</a></li>
+          <li><a href="#search" class="hover:text-white transition-colors">File Search</a></li>
+          <li><a href="#calculator" class="hover:text-white transition-colors">Calculator</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Top Extensions -->
+      <div>
+        <h5 class="text-white font-semibold mb-3">Top Extensions</h5>
+        <ul class="space-y-2">
+          <li><a href="#store" class="hover:text-white transition-colors">Design Tools</a></li>
+          <li><a href="#store" class="hover:text-white transition-colors">Developer Tools</a></li>
+          <li><a href="#store" class="hover:text-white transition-colors">Pomodoro Timer</a></li>
+          <li><a href="#store" class="hover:text-white transition-colors">Productivity</a></li>
+          <li><a href="#store" class="hover:text-white transition-colors">Translation</a></li>
+          <li><a href="#store" class="hover:text-white transition-colors">Linear &amp; Jira</a></li>
+          <li><a href="#store" class="hover:text-white transition-colors">Spotify</a></li>
+          <li><a href="#store" class="hover:text-white transition-colors">Notion &amp; Obsidian</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Company -->
+      <div>
+        <h5 class="text-white font-semibold mb-3">Company</h5>
+        <ul class="space-y-2">
+          <li><a href="#manifesto" class="hover:text-white transition-colors">Manifesto</a></li>
+          <li><a href="#customers" class="hover:text-white transition-colors">Customers</a></li>
+          <li><a href="#careers" class="hover:text-white transition-colors">Careers</a></li>
+          <li><a href="#privacy" class="hover:text-white transition-colors">Privacy Policy</a></li>
+          <li><a href="#terms" class="hover:text-white transition-colors">Terms of Service</a></li>
+          <li><a href="#dpa" class="hover:text-white transition-colors">DPA &amp; Security</a></li>
+          <li><a href="#press" class="hover:text-white transition-colors">Press Kit</a></li>
+          <li><a href="#contact" class="hover:text-white transition-colors">Contact</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 5: Community -->
+      <div>
+        <h5 class="text-white font-semibold mb-3">Community</h5>
+        <ul class="space-y-2">
+          <li><a href="https://raycast.com/community" target="_blank" class="hover:text-white transition-colors">Slack (37k)</a></li>
+          <li><a href="https://twitter.com/raycastapp" target="_blank" class="hover:text-white transition-colors">X / Twitter (90k)</a></li>
+          <li><a href="https://github.com/raycast" target="_blank" class="hover:text-white transition-colors">GitHub</a></li>
+          <li><a href="https://youtube.com/@RaycastApp" target="_blank" class="hover:text-white transition-colors">YouTube</a></li>
+          <li><a href="#ambassadors" class="hover:text-white transition-colors">Ambassadors</a></li>
+          <li><a href="#stories" class="hover:text-white transition-colors">Community Stories</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 6: By Raycast & Newsletter -->
+      <div>
+        <h5 class="text-white font-semibold mb-3">By Raycast</h5>
+        <ul class="space-y-2 mb-6">
+          <li><a href="#keyboard-section" class="hover:text-white transition-colors">Keyboard</a></li>
+          <li><a href="https://ray.so" target="_blank" class="hover:text-white transition-colors">ray.so (Code to Image)</a></li>
+          <li><a href="#iconmaker" class="hover:text-white transition-colors">Icon Maker</a></li>
+          <li><a href="#wallpapers" class="hover:text-white transition-colors">Wallpapers</a></li>
+        </ul>
+
+        <div class="mt-4">
+          <span class="text-white font-medium block mb-2 text-xs">Stay updated</span>
+          <form onsubmit="subscribeNewsletter(event)" class="flex flex-col gap-2">
+            <input type="email" id="newsletter-email" required placeholder="name@domain.com" 
+                   class="bg-zinc-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-red-500/50">
+            <button type="submit" class="bg-white hover:bg-zinc-200 text-black font-semibold rounded-lg py-1 text-xs transition-colors">
+              Subscribe
+            </button>
+            <span id="newsletter-status" class="text-[10px] text-green-400 font-mono hidden">Subscribed! Welcome.</span>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Copyright & Status -->
+    <div class="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-red-600 flex items-center justify-center text-[8px] text-white font-bold">R</div>
+        <span>© 2026 Raycast Technologies Inc. All rights reserved.</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="flex items-center gap-1.5 text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          All systems operational
+        </span>
+        <a href="#top" class="hover:text-white transition-colors">Back to top ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCRIPT FOR CANVAS AND INTERACTIVE FEATURES -->
+  <script>
+    /* =====================================================================
+       1. HERO RED STREAK CANVAS ANIMATION (Matches Screenshot 2)
+       ===================================================================== */
+    const canvas = document.getElementById('hero-streak-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      width = canvas.width = container.clientWidth;
+      height = canvas.height = container.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Red light beams parameters
+    const streaks = [
+      { x: -50, y: 100, length: 700, width: 90, angle: -0.65, alpha: 0.85, color: '#FF3344' },
+      { x: 120, y: 80, length: 750, width: 140, angle: -0.65, alpha: 0.95, color: '#FF5555' },
+      { x: 280, y: 150, length: 650, width: 70, angle: -0.65, alpha: 0.7, color: '#D91E36' },
+      { x: 420, y: 180, length: 600, width: 110, angle: -0.65, alpha: 0.85, color: '#FF2A42' },
+      { x: 550, y: 220, length: 500, width: 50, angle: -0.65, alpha: 0.5, color: '#991122' },
+    ];
+
+    let streakTime = 0;
+    function renderStreaks() {
+      ctx.clearRect(0, 0, width, height);
+      streakTime += 0.015;
+
+      const centerX = width * 0.52;
+      const centerY = height * 0.42;
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+
+      // Layered glow blend
+      ctx.globalCompositeOperation = 'screen';
+
+      streaks.forEach((st, idx) => {
+        const pulse = Math.sin(streakTime + idx) * 0.08;
+        const currentAlpha = Math.max(0.1, st.alpha + pulse);
+
+        ctx.save();
+        ctx.rotate(st.angle);
+
+        const grad = ctx.createLinearGradient(-st.length * 0.5, 0, st.length * 0.5, 0);
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(0.3, st.color);
+        grad.addColorStop(0.7, st.color);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+        ctx.fillStyle = grad;
+        ctx.filter = 'blur(12px)';
+        ctx.fillRect(-st.length * 0.5 + st.x - 200, -st.width * 0.5, st.length, st.width);
+
+        // Core highlights
+        ctx.filter = 'blur(4px)';
+        ctx.fillStyle = 'rgba(255, 120, 120, 0.4)';
+        ctx.fillRect(-st.length * 0.35 + st.x - 200, -st.width * 0.2, st.length * 0.7, st.width * 0.4);
+
+        ctx.restore();
+      });
+
+      ctx.restore();
+      requestAnimationFrame(renderStreaks);
+    }
+    renderStreaks();
+
+    /* =====================================================================
+       2. MAC CLOCK SYNC
+       ===================================================================== */
+    function updateMacClock() {
+      const now = new Date();
+      const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+      const str = now.toLocaleDateString('en-US', options).replace(/,/g, '');
+      const clockEl = document.getElementById('mac-clock');
+      if (clockEl) clockEl.textContent = str;
+    }
+    setInterval(updateMacClock, 10000);
+    updateMacClock();
+
+    /* =====================================================================
+       3. INTERACTIVE MAC SHOWCASE TABS (Screenshot 1)
+       ===================================================================== */
+    const tabViews = {
+      clipboard: document.getElementById('view-clipboard'),
+      ai: document.getElementById('view-ai'),
+      emoji: document.getElementById('view-emoji'),
+      snippets: document.getElementById('view-snippets'),
+      windows: document.getElementById('view-windows'),
+    };
+
+    const tabCaptions = {
+      clipboard: '<strong class="text-white">Remember Everything.</strong> Stop playing Clipboard ping pong - with Clipboard History you'll never forget anything.',
+      ai: '<strong class="text-white">Your Autonomous Co-pilot.</strong> Seamlessly integrate your everyday tools and automate routine work with AI.',
+      emoji: '<strong class="text-white">Express Faster.</strong> Instant fuzzy search and skin tone selection for every emoji and symbol.',
+      snippets: '<strong class="text-white">Don't Repeat Yourself.</strong> Turn repetitive templates and text snippets into lightning keystrokes.',
+      windows: '<strong class="text-white">Pixel Perfect Layouts.</strong> Snap and organize desktop windows without ever touching the mouse.',
+    };
+
+    function switchMacTab(tabKey, label) {
+      // Hide all views
+      Object.values(tabViews).forEach(v => v.classList.add('hidden'));
+      // Show selected
+      if (tabViews[tabKey]) tabViews[tabKey].classList.remove('hidden');
+
+      // Update dock buttons
+      document.querySelectorAll('.dock-btn').forEach(btn => {
+        btn.classList.remove('bg-white/15', 'text-white');
+        btn.classList.add('text-zinc-400');
+      });
+      const activeBtn = document.getElementById('dock-btn-' + tabKey);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white/15', 'text-white');
+        activeBtn.classList.remove('text-zinc-400');
+      }
+
+      // Update tooltip & header
+      document.getElementById('dock-tooltip').textContent = label;
+      document.getElementById('window-status-label').textContent = label;
+      document.getElementById('mac-section-caption').innerHTML = tabCaptions[tabKey] || '';
+    }
+
+    /* Clipboard History Item Selection */
+    const clipEntries = [
+      { name: 'Image [1200 × 1000]', app: 'Finder', type: 'Image', path: '~/Desktop/wallpaper.png', dim: '842 × 420' },
+      { name: 'Two Mangos [640 × 427]', app: 'Safari', type: 'JPEG Image', path: '~/Downloads/mangos.jpg', dim: '640 × 427' },
+      { name: 'magic.png [640 × 360]', app: 'Figma', type: 'PNG Asset', path: '~/Projects/Design/magic.png', dim: '640 × 360' },
+      { name: 'Image [842 × 420]', app: 'CleanShot X', type: 'PNG Image', path: '~/Desktop/screenshot_01.png', dim: '842 × 420' },
+    ];
+
+    function selectClipboardEntry(index) {
+      const data = clipEntries[index];
+      if (!data) return;
+
+      document.querySelectorAll('.clip-item').forEach((item, idx) => {
+        if (idx === index) {
+          item.className = 'clip-item flex items-center justify-between px-3 py-2 rounded-lg bg-red-600/20 text-white border border-red-500/30 cursor-pointer';
+        } else {
+          item.className = 'clip-item flex items-center justify-between px-3 py-2 rounded-lg text-zinc-400 hover:bg-white/5 cursor-pointer transition-colors';
+        }
+      });
+
+      document.getElementById('clip-app').textContent = data.app;
+      document.getElementById('clip-type').textContent = data.type;
+      document.getElementById('clip-path').textContent = data.path;
+      document.getElementById('clip-dim').textContent = data.dim;
+
+      // Animate preview art
+      const art = document.getElementById('preview-art');
+      art.style.transform = 'scale(0.85) rotate(' + (index * 45) + 'deg)';
+      setTimeout(() => {
+        art.style.transform = 'scale(1) rotate(' + (index * 45) + 'deg)';
+      }, 150);
+    }
+
+    /* Filter dropdown */
+    function toggleFilterMenu() {
+      const menu = document.getElementById('filter-menu');
+      menu.classList.toggle('hidden');
+    }
+    function setFilter(name) {
+      document.getElementById('filter-label').textContent = name;
+      document.getElementById('filter-menu').classList.add('hidden');
+    }
+
+    function copyEmoji(emoji) {
+      navigator.clipboard.writeText(emoji);
+      const toast = document.getElementById('emoji-toast');
+      toast.textContent = 'Copied ' + emoji + ' to clipboard!';
+      toast.classList.remove('opacity-0');
+      setTimeout(() => toast.classList.add('opacity-0'), 2000);
+    }
+
+    /* =====================================================================
+       4. EXTENSIONS SEARCH & FILTER
+       ===================================================================== */
+    function filterExtensions(cat) {
+      document.querySelectorAll('.ext-btn').forEach(btn => {
+        btn.classList.remove('bg-white/10', 'text-white', 'font-semibold');
+        btn.classList.add('text-zinc-400');
+      });
+      const activeBtn = document.getElementById('ext-filter-' + cat);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white/10', 'text-white', 'font-semibold');
+        activeBtn.classList.remove('text-zinc-400');
+      }
+
+      document.querySelectorAll('.ext-card').forEach(card => {
+        if (cat === 'all') {
+          card.classList.remove('hidden');
+        } else {
+          const cats = card.getAttribute('data-category') || '';
+          if (cats.includes(cat)) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        }
+      });
+    }
+
+    function searchExtensions(query) {
+      const q = query.toLowerCase().trim();
+      document.querySelectorAll('.ext-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (text.includes(q)) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    /* =====================================================================
+       5. COMMAND PALETTE MODAL
+       ===================================================================== */
+    function openCommandPalette() {
+      const palette = document.getElementById('command-palette-backdrop');
+      palette.classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('palette-input').focus();
+      }, 50);
+    }
+
+    function closeCommandPalette(e) {
+      document.getElementById('command-palette-backdrop').classList.add('hidden');
+    }
+
+    function filterPalette(val) {
+      const q = val.toLowerCase().trim();
+      document.querySelectorAll('.palette-item').forEach(item => {
+        if (item.textContent.toLowerCase().includes(q)) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    }
+
+    function executePaletteAction(action) {
+      closeCommandPalette();
+      if (action === 'download') {
+        window.location.hash = '#download';
+        alert("Downloading Raycast for macOS Tahoe & Apple Silicon...");
+      } else if (action === 'brew') {
+        copyHomebrewCommand();
+      } else if (action === 'clipboard') {
+        window.location.hash = '#demo';
+        switchMacTab('clipboard', 'Clipboard History');
+      } else if (action === 'ai') {
+        window.location.hash = '#ai';
+      } else if (action === 'store') {
+        window.location.hash = '#store';
+      } else if (action === 'keyboard') {
+        window.location.hash = '#keyboard-section';
+      } else if (action === 'slack') {
+        window.open('https://raycast.com/community', '_blank');
+      }
+    }
+
+    /* Global Keyboard Shortcuts */
+    window.addEventListener('keydown', (e) => {
+      // Cmd+K or Ctrl+K opens palette
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openCommandPalette();
+      }
+      // ESC closes palette
+      if (e.key === 'Escape') {
+        closeCommandPalette();
+      }
+      // Light up virtual keycaps if typing
+      const keyId = 'key-' + e.key.toLowerCase();
+      const el = document.getElementById(keyId);
+      if (el) {
+        el.classList.add('active', 'border-red-500');
+        setTimeout(() => el.classList.remove('active', 'border-red-500'), 150);
+      }
+    });
+
+    /* =====================================================================
+       6. UTILITIES (Homebrew copy & Newsletter)
+       ===================================================================== */
+    function copyHomebrewCommand() {
+      navigator.clipboard.writeText('brew install --cask raycast');
+      const badge = document.getElementById('brew-copied-badge');
+      if (badge) {
+        badge.classList.remove('hidden');
+        setTimeout(() => badge.classList.add('hidden'), 2500);
+      }
+    }
+
+    function subscribeNewsletter(e) {
+      e.preventDefault();
+      const status = document.getElementById('newsletter-status');
+      status.classList.remove('hidden');
+      document.getElementById('newsletter-email').value = '';
+    }
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('hidden');
+    }
+  </script>
+</body>
+</html>
